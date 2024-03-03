@@ -1,0 +1,133 @@
+getwd()
+setwd("E:/R")
+
+library("cbsodataR")
+library("xlsx")
+library("PreProcess")
+
+toc = read.xlsx2("Deans Dilemma Data.xlsx",1,header=TRUE)
+head(toc)
+toc[1:10,1:3]
+
+#Assignment 4
+par(cex = 0.9, bg = "#D3D3D3")
+with(toc,
+     plot(Percent_Degree,Percent_MBA, main = "Undergrad and MBA grades", pch = 19,
+xlab = "Undergrad grades percentage", ylab = "MBA grades percentage"))
+
+with(toc,
+     points(Percent_Degree, Percent_MBA,col = "blue"
+     ))
+
+legend("topleft",fill = c("blue","red"),legend = c("Data Points","Best fit line"))
+x = as.numeric(toc[,"Percent_Degree"])
+y = as.numeric(toc[,"Percent_MBA"])
+
+abline(lm(y~ x), col = "red", lwd = 4, lty = 3)
+
+
+plot(
+  x = toc[,"Percent_SSC"],
+  y = toc[,"Percent_MBA"]
+)
+
+plot(
+  x = toc[,"Percent_MBA"],
+  y = toc[,"Salary"]
+)
+
+plot(
+  x = toc[,"Marks_Communication"],
+  y = toc[,"Percent_MBA"]
+)
+
+#3a box plots
+A = as.numeric(toc[,"Percent_Degree"])
+B = as.numeric(toc[,"Percentile_ET"])
+C = as.numeric(toc[,"Percent_MBA"])
+
+box = cbind(A,B,C)
+boxplot(box,main="Exams Results Comparison",xaxt='n')
+axis(1, at=1:3, c("Undergrad degree percentage", "Entrance exam", "MBA percentage")) 
+box[1:3,1:3]
+
+#Assignment 5 placed vs not placed
+ordering = sort(toc[,"Percent_MBA"],index = TRUE)
+map = map[ordering$ix,]
+
+
+maxY = max(toc[,"Percent_MBA"])
+chrs = c("Placed", "Not Placed")
+
+plot(c(0,1), c(0,maxY), t = 'n', xlab = "Job Success", ylab = "MBA grade",
+     xaxt = 'n', las = 2)
+axis(1,at = 0:1, chrs)
+
+
+for(x in 1:nrow(toc)){
+  xpos = which(chrs == toc[x,"Placement"])
+  ypos = as.numeric(toc[x,"Percent_MBA"])
+  points(xpos,ypos, pch = "X", col = "red", cex = 0.4)
+}
+
+#5 mean and median grey plot
+
+maxY = max(toc[,"Percent_MBA"])
+maxX = max(toc[,"Percent_Degree"])
+plot(c(1,length(tic)), c(0,maxY), t = 'n', xlab = "Job Success", ylab = "MBA grade",
+  , las = 2)
+
+tic = subset(toc,select = c(Percent_SSC,Percent_HSC, Percent_Degree, Percent_MBA))
+mean = apply(toc, 2, mean)
+medianss = apply(tic,2,median)
+
+for(x in 1:nrow(tic)){
+  points(as.numeric(tic[x,]), t = 'l', col = 'green')
+}
+points(medianss, t='l', lwd=2)
+
+
+#Assignment 6 Job placed vs not placed
+Placed = rownames(toc)[which(toc[,"Placement"] == "Placed")]
+NotPlaced = rownames(toc)[which(toc[,"Placement"] == "Not Placed")]
+toc.sub = subset(toc,select = c("Percent_SSC", "Percent_HSC","Percent_Degree","Percent_MBA"))
+
+job.placed = toc[Placed,c("Percent_SSC", "Percent_HSC","Percent_Degree","Percent_MBA")]
+job.notplaced = toc[NotPlaced,c("Percent_SSC", "Percent_HSC","Percent_Degree","Percent_MBA")]
+
+stats = c()
+
+for(x in 1:ncol(job.placed)){
+  srow = c(mean(as.numeric(job.placed[,x])), sd(as.numeric(job.placed[,x])), mean(as.numeric(job.notplaced[,x])), sd(as.numeric(job.notplaced[,x])))
+  stats = rbind(stats,srow)
+}
+
+rownames(stats) = colnames(job.placed)
+colnames(stats) = c("Mean with Job placed", "SD for Job Placed", "Mean for Job not placed", "SD for Job not placed")
+
+stats = cbind(stats,pval = NA)
+
+for (x in 1:ncol(job.placed)){
+  p = t.test(as.numeric(job.placed[,x]),as.numeric(job.notplaced[,x]))
+  stats[x,"pval"] = p$p.value
+}
+stats <- tibble::rowid_to_column(as.data.frame(stats), "ID")
+row.names(stats) = colnames(job.placed)
+
+#Plot
+par(mfrow = c(1:2))
+maxY = max(stats[,"Mean with Job placed"])
+maxX = nrow(stats)
+chrs = rownames(stats)
+
+plot(x = stats[,"ID"], y = stats[,"Mean with Job placed"] , t = 'l', xlab = "Job placed", ylab = "Grades",
+    , las = 1)
+axis(1,at = 0:3, chrs, lwd = 1 )
+
+plot(
+  x = stats[,"ID"],
+  y = stats[,"Mean with Job placed"]
+)
+for(x in 1:nrow(stats)){
+  points(as.numeric(stats[x,"Mean with Job placed"]), t = 'l', col = 'gray', cex = 0.4)
+}
